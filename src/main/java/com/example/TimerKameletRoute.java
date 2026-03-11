@@ -20,15 +20,19 @@ public class TimerKameletRoute extends RouteBuilder {
         from("timer:ddb-insert?repeatCount=1")
             .routeId("timer-to-aws-ddb-kamelet-route")
             .log("Inserting entry into DynamoDB table: " + tableName)
-            .process(exchange -> {
-                // Create a Map for DynamoDB item (required for PutItem operation)
-                Map<String, AttributeValue> item = new HashMap<>();
-                item.put("id", AttributeValue.builder().s("1").build());
-                item.put("message", AttributeValue.builder().s("Hello DynamoDBfMBYU").build());
-
-                exchange.getIn().setHeader(Ddb2Constants.OPERATION, Ddb2Operations.PutItem);
-                exchange.getIn().setHeader(Ddb2Constants.ITEM, item);
-            })
+            .setBody(constant("""
+                        {
+                            "operation": "PutItem",
+                            "key": {
+                              "id": "1"
+                            },
+                            "item": {
+                              "id": "1",
+                              "message": "Hello DynamoDB"
+                            }
+                          }
+                          """
+            ))
             .log("Item to insert: ${body}")
             .toD("kamelet:aws-ddb-sink"
                 + "?table=" + tableName
